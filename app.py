@@ -20,6 +20,9 @@ if "extracted_info" not in st.session_state:
         "severity": "Unknown"
     }
 
+if "followup_questions" not in st.session_state:
+    st.session_state.followup_questions = []
+
 audio, duration = input_fetch_convert.record_audio()
 
 if audio is not None and st.button("Submit Recording"):
@@ -37,8 +40,13 @@ if audio is not None and st.button("Submit Recording"):
                         st.session_state.extracted_info
                     )
         st.session_state.extracted_info = (current_info)
+
+        st.session_state.followup_questions = check_info_followup.ask_follow(missing_fields)
     else:
         st.error("No speech could be detected.")
+
+for question in st.session_state.followup_questions:
+    st.warning(question)
 
 st.header("Transcript")
 
