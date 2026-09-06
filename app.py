@@ -1,5 +1,7 @@
 import streamlit as st
 import input_fetch_convert
+import extract_info
+import check_info_followup
 
 st.set_page_config(page_title="AI Emergency Call")
 
@@ -7,6 +9,16 @@ st.title("🎤 AI Emergency Call")
 
 if "transcripts" not in st.session_state:
     st.session_state.transcripts = []
+
+if "extracted_info" not in st.session_state:
+    st.session_state.extracted_info = {
+        "emergency_type": "Unknown",
+        "location": "Unknown",
+        "people_involved": "Unknown",
+        "injuries": "Unknown",
+        "hazards": "Unknown",
+        "severity": "Unknown"
+    }
 
 audio, duration = input_fetch_convert.record_audio()
 
@@ -18,6 +30,13 @@ if audio is not None and st.button("Submit Recording"):
             "text": query,
             "duration": duration
         })
+
+        current_info = extract_info.extract_info(query)
+        current_info, missing_fields = check_info_followup.check_missing_fields(
+                        current_info,
+                        st.session_state.extracted_info
+                    )
+        st.session_state.extracted_info = (current_info)
     else:
         st.error("No speech could be detected.")
 
@@ -26,3 +45,6 @@ st.header("Transcript")
 for item in st.session_state.transcripts:
     st.markdown(item["text"])
     st.caption(f"Audio duration: {item['duration']:.1f} seconds")
+
+st.header("Extracted Info")
+st.json(st.session_state.extracted_info)
