@@ -7,7 +7,7 @@ def check_missing_fields(current_info, previous_info):
         None
     ]
 
-    lookup_fields = ['emergency_type', 'location', 'people_involved', 'severity']
+    lookup_fields = ['emergency_type', 'location', 'people_involved', 'injuries', 'hazards', 'severity']
 
     missing_fields = []
     for field in previous_info:
@@ -27,8 +27,9 @@ def ask_follow(missing_fields):
         "emergency_type": "What type of emergency is it?",
         "location": "What is the exact location?",
         "people_involved": "How many people are involved?",
+        "injuries": "How many people are injured?",
+        "hazard": "What was the cause of the incidient?",
         "severity": "How serious is the situation?"
-        # other
     }
 
     questions = []
