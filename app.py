@@ -4,8 +4,12 @@ import extract_info
 import check_info_followup
 import generate_report_recommendation
 import base64
+from langsmith import traceable
 
 st.set_page_config(page_title="AI Emergency Call Intelligence System")
+
+
+@traceable(name="emergency-call-intelligence-system")
 
 def set_seamless_bg_with_sidebar_border(image_file):
     with open(image_file, "rb") as file:
@@ -70,7 +74,6 @@ def set_seamless_bg_with_sidebar_border(image_file):
         unsafe_allow_html=True
     )
 
-# Call the function with your local image path
 set_seamless_bg_with_sidebar_border("assets/emergency_bg.png")
 
 st.markdown(

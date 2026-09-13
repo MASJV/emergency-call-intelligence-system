@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 from openai import OpenAI
+from langsmith import traceable
 
 load_dotenv()
 
@@ -8,6 +9,7 @@ client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY")
 )
 
+@traceable(name="generateReport")
 def generate_report(transcript):
     prompt = f"""You are an expert emergency-response dispatcher and legal documentation specialist writing a formal Incident Report for an official case file.
 
@@ -66,6 +68,7 @@ Now write the Incident Report for the transcript provided above.
 
     return response.output_text
 
+@traceable(name="generateRecommendation")
 def generate_recommendation(current_info):
 
     prompt = f"""You are an emergency first-response assistant giving pre-arrival guidance to an untrained caller.
@@ -100,6 +103,9 @@ Order steps by priority: scene safety first, then contacting/confirming emergenc
 HAZARD-SPECIFIC FIRST AID (include only if that hazard is explicitly mentioned in the emergency information — do not infer or guess an injury that wasn't stated)
 - Burns or fire exposure: include a step to cool the burn under clean running water for several minutes and cover loosely with a clean cloth. Do not mention ice, butter, ointments, or creams.
 - Bleeding or open wound: include a step to apply firm, steady direct pressure to the wound with a clean cloth. Do not mention removing embedded objects or tourniquets.
+- Gas leak or suspected gas smell: include a step to avoid switches, lighters, or anything that could spark, and to move away from the area and open windows/doors if it is safe to do so.
+- Downed power line or electrical hazard: include a step to stay well away from the wire and anything it is touching, and to warn others not to approach.
+- Unstable or collapsing structure: include a step to move to a clear, open area away from the structure and not to re-enter it.
 - If no specific hazard is mentioned, skip this section and keep to general scene-safety and dispatch steps.
 
 RULES

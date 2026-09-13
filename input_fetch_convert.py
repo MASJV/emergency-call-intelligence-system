@@ -4,6 +4,7 @@ import wave
 from dotenv import load_dotenv
 from openai import OpenAI
 import streamlit as st
+from langsmith import traceable
 
 load_dotenv()
 
@@ -11,6 +12,7 @@ client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY")
 )
 
+@traceable(name="recordAudio")
 def record_audio():
     audio = st.audio_input(
         "Record emergency message",
@@ -30,6 +32,7 @@ def record_audio():
 
     return audio, actual_duration
 
+@traceable(name="speechToText")
 def speech_to_text(audio):
     audio.seek(0)
 
