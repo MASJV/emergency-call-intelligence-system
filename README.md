@@ -1,14 +1,13 @@
 # 🚨 AI Emergency Call Intelligence System
 
 A voice-in, text-out emergency call assistant. A caller speaks, the system
-transcribes and extracts structured incident data one field at a time,
-asks follow-up questions for whatever is still missing, and — once every
-field is known — produces a formal incident report and a short set of
-pre-arrival safety steps for the caller.
+transcribes and extracts structured incident data, asks follow-up questions
+for missing information, and — once all required fields are known — produces
+a formal incident report and a short set of pre-arrival safety steps.
 
 ## 🏗️ Architecture
 
-```
+```text
 Streamlit UI (st.audio_input, mic recording)
        |
    Audio bytes (WAV) -> duration calculated
@@ -32,167 +31,148 @@ GPT-4.1 mini Pre-arrival Recommendation (from structured state)
 Streamlit display (sidebar transcript, JSON state, report, recommendations)
 ```
 
-All stages are wrapped in `@traceable` (LangSmith) for tracing.
+Core processing stages are wrapped in `@traceable` (LangSmith) for tracing
+and observability.
 
 ## 📁 Files and which stage they handle
 
-| File | Stage |
-|---|---|
-| `input_fetch_convert.py` | Mic capture (`st.audio_input`) + Whisper speech-to-text |
-| `extract_info.py` | GPT-4.1 mini structured field extraction |
-| `check_info_followup.py` | State merge, missing-field detection, follow-up question generation |
-| `generate_report_recommendation.py` | Incident report generation + pre-arrival safety recommendations |
-| `app.py` | Streamlit app — session state, UI, wires every stage together |
+| File                                | Stage                                                               |
+| ----------------------------------- | ------------------------------------------------------------------- |
+| `input_fetch_convert.py`            | Mic capture (`st.audio_input`) + Whisper speech-to-text             |
+| `extract_info.py`                   | GPT-4.1 mini structured field extraction                            |
+| `check_info_followup.py`            | State merge, missing-field detection, follow-up question generation |
+| `generate_report_recommendation.py` | Incident report generation + pre-arrival safety recommendations     |
+| `app.py`                            | Streamlit app — session state, UI, and pipeline orchestration       |
 
 ## 📋 Fields extracted
 
 `emergency_type`, `location`, `people_involved`, `injuries`, `hazards`, `severity`
 
-Every field defaults to `"Unknown"` until the caller states it explicitly.
-The extractor is instructed never to infer or guess a value — a hallucinated
-field (a wrong location, an invented hazard) is a dispatch-safety issue, not
-just an accuracy one. `hazards` distinguishes an explicit "no hazard" (`"None"`)
-from "not mentioned yet" (`"Unknown"`), so the follow-up loop keeps asking
-until the caller actually answers the hazard question rather than treating
-silence as "safe."
+Every field defaults to `"Unknown"` until the caller provides enough
+information for it to be extracted with sufficient confidence.
+
+Safety-sensitive fields such as location and hazards are handled
+conservatively and are not guessed when unclear. The `hazards` field also
+distinguishes between an explicitly stated absence of hazards (`"None"`)
+and information that has not yet been provided (`"Unknown"`).
 
 ## ⚙️ Setup
 
 1. Create a virtual environment (recommended):
-   ```
+
+   ```bash
    python -m venv venv
-   venv\Scripts\activate      (Windows)
-   source venv/bin/activate   (Mac/Linux)
+   venv\Scripts\activate      # Windows
+   source venv/bin/activate   # Mac/Linux
    ```
 
 2. Install dependencies:
-   ```
+
+   ```bash
    pip install -r requirements.txt
    ```
 
 3. Add a `.env` file with:
-   ```
+
+   ```env
    OPENAI_API_KEY=your_key_here
    ```
-   The key is read at import time via `python-dotenv` — unlike a session-entered
-   key, this one needs to be in place before the app starts.
 
-   For LangSmith tracing, also set the standard LangSmith environment
-   variables (`LANGSMITH_API_KEY`, `LANGSMITH_TRACING=true`, and a project
-   name) — tracing is optional; the app runs without it, just without traces.
+   The key is loaded using `python-dotenv` when the application starts.
 
-4. Make sure `assets/emergency_bg.png` exists relative to `app.py` — the
-   background styling loads this file directly and will error if it's missing.
+   For LangSmith tracing, also configure the standard LangSmith environment
+   variables:
 
-5. Run the app:
+   ```env
+   LANGSMITH_API_KEY=your_key_here
+   LANGSMITH_TRACING=true
+   LANGSMITH_PROJECT=your_project_name
    ```
+
+   LangSmith tracing is optional; the application can run without it.
+
+4. Make sure `assets/emergency_bg.png` exists relative to `app.py`.
+
+5. Run the application:
+
+   ```bash
    streamlit run app.py
    ```
 
 ## 🗣️ How it works, in plain words
 
-1. **Speak** — the caller records a message through the browser mic button.
-2. **Transcribe** — Whisper turns that recording into text. This is
-   near-real-time and turn-based (record → submit → transcribe), not
-   continuous streaming.
-3. **Extract** — GPT-4.1 mini reads the latest turn only (not the whole
-   call history, to keep cost from growing with every turn) and pulls out
-   whichever of the 6 fields it can find, explicitly stated only.
-4. **Merge & check** — new values fill in `"Unknown"` slots; anything the
-   caller already gave stays put. Whatever is still `"Unknown"` after the
-   merge becomes a follow-up question.
-5. **Loop** — the caller answers, the cycle repeats, the gaps narrow.
-6. **Report & recommend** — once all 6 fields are known, two things run in
-   parallel: a four-section formal incident report generated from the full
-   transcript (Incident Overview, Chronological Narrative, Critical
-   Information Extracted, Dispatch and Response Summary), and a separate
-   3–6 step pre-arrival safety recommendation generated from the structured
-   field state — scene safety first, then confirming emergency services,
-   then any hazard-specific first aid (burns, bleeding, gas leak, downed
-   power line, unstable structure), then "follow the dispatcher's
-   instructions."
+1. **Speak** — the caller records an emergency message through the browser microphone.
+
+2. **Transcribe** — Whisper converts the recording into text. The current
+   implementation is turn-based (`record → submit → transcribe`) rather than
+   continuous audio streaming.
+
+3. **Extract** — GPT-4.1 mini processes the latest caller turn and extracts
+   whichever of the six incident fields can be determined with sufficient
+   confidence.
+
+4. **Merge & check** — newly extracted values fill `"Unknown"` fields while
+   previously collected information is preserved. Any fields still marked
+   `"Unknown"` are identified as missing.
+
+5. **Loop** — targeted follow-up questions are generated for the missing fields.
+   The caller responds and the cycle repeats until the required information is
+   complete.
+
+6. **Report & recommend** — once all six fields are known, two separate outputs
+   are generated: a four-section formal incident report from the full transcript
+   (`Incident Overview`, `Chronological Narrative`, `Critical Information Extracted`,
+   `Dispatch and Response Summary`) and a 3–6 step pre-arrival safety
+   recommendation from the structured incident state.
 
 ## ✨ Enhancements
 
 Beyond the base capstone requirements:
 
-- ✅ Tracing and observability — every stage wrapped in LangSmith `@traceable`
-- ✅ Audio (speech-to-text) evaluation — Word Error Rate scoring via jiwer
+* ✅ LangSmith tracing and observability across core processing stages
+* ✅ Audio speech-to-text evaluation using Word Error Rate (WER) with `jiwer`
 
 ## 📊 Evaluation
 
 ### 🎙️ Audio / speech-to-text (jiwer, WER)
 
-`evaluation/evaluate_audio.py` runs a fixed set of 10 recorded test clips
-against the same `speech_to_text()` function the app uses in production —
-not a copy or reimplementation, the actual function. Each clip's Whisper
-output is scored against a hand-typed reference transcript using Word
-Error Rate, with a normalization pass (lowercase, punctuation stripped)
-so formatting differences don't count as errors.
+The speech-to-text component was evaluated using 10 recorded emergency
+scenarios. Each recording was processed through the same `speech_to_text()`
+function used by the application and compared against a manually written
+reference transcript using Word Error Rate (WER).
 
-`evaluation/audio_test_cases.json` holds the clip-to-reference mapping.
-The clips themselves aren't committed (`evaluation/test_clips/` is
-gitignored, since they're personal voice recordings) — the reference
-JSON and the sample output below are kept as the record of what was
-said and how the run went.
+Before scoring, transcripts were normalized by converting text to lowercase
+and removing punctuation so formatting differences would not be treated as
+transcription errors.
 
-Sample output from a run:
+| Test | Scenario                                |   WER | Notable difference                    |
+| ---- | --------------------------------------- | ----: | ------------------------------------- |
+| 1    | Car accident near Iskcon crossroads     | 0.087 | `"There's been"` → `"There has been"` |
+| 2    | Kitchen fire                            | 0.125 | `"third floor"` → `"3rd floor"`       |
+| 3    | Unresponsive person                     | 0.267 | Minor phrasing differences            |
+| 4    | Gas leak                                | 0.000 | Exact after normalization             |
+| 5    | Motorcycle accident near Vastrapur Lake | 0.000 | Exact after normalization             |
+| 6    | Fight near a market                     | 0.000 | Exact after normalization             |
+| 7    | Downed power line near Navrangpura      | 0.050 | `"Navrangpura"` → `"Novrankura"`      |
+| 8    | Robbery                                 | 0.000 | Exact after normalization             |
+| 9    | Building collapse near Law Garden       | 0.000 | Exact after normalization             |
+| 10   | Chest pain in Bopal                     | 0.133 | `"Bopal"` → `"Bhopal"`                |
 
-```
-evaluation/test_clips/clip1.m4a: WER = 0.087
-  reference : There's been a car accident on SG Highway near the Iskcon crossroads, two cars collided and one person is bleeding from the head.
-  hypothesis: There has been a car accident on SG highway near the ISKCON crossroads, two cars collided and one person is bleeding from the head.
+**Overall WER across 10 clips: `0.062`**
 
-evaluation/test_clips/clip2.m4a: WER = 0.125
-  reference : There's a fire in the kitchen of my apartment on the third floor, the smoke is spreading fast and I need help right now.
-  hypothesis: There is a fire in the kitchen of my apartment on the 3rd floor. The smoke is spreading fast and I need help right now.
+Most non-zero differences resulted from equivalent phrasing or formatting
+rather than incorrect recognition. The more relevant errors occurred with
+local place names — particularly `"Navrangpura"` and `"Bopal"` — highlighting
+location transcription as an important area to watch in emergency-call
+speech processing.
 
-evaluation/test_clips/clip3.m4a: WER = 0.267
-  reference : My neighbor just collapsed on the stairs and he's not responding, I think he's unconscious.
-  hypothesis: My neighbor just collapsed on the stairs and he is not responding. I think he is unconscious.
-
-evaluation/test_clips/clip4.m4a: WER = 0.0
-  reference : There's a gas leak in our building, I can smell it strongly near the parking area, please send someone immediately.
-  hypothesis: There's a gas leak in our building. I can smell it strongly near the parking area. Please send someone immediately.
-
-evaluation/test_clips/clip5.m4a: WER = 0.0
-  reference : A motorcycle skidded and fell near Vastrapur lake, the rider seems conscious but his leg looks injured.
-  hypothesis: A motorcycle skidded and fell near Vastrapur lake. The rider seems conscious but his leg looks injured.
-
-evaluation/test_clips/clip6.m4a: WER = 0.0
-  reference : There's a small crowd gathered after a fight broke out near the market, no one seems seriously hurt but it's getting loud.
-  hypothesis: There's a small crowd gathered after a fight broke out near the market. No one seems seriously hurt, but it's getting loud.
-
-evaluation/test_clips/clip7.m4a: WER = 0.05
-  reference : A power line fell down after the storm near my house on Navrangpura main road, nobody has touched it yet.
-  hypothesis: A power line fell down after the storm near my house on Novrankura Main Road, nobody has touched it yet.
-
-evaluation/test_clips/clip8.m4a: WER = 0.0
-  reference : There's been a robbery at the shop next to my house, the owner is shaken but not hurt.
-  hypothesis: There's been a robbery at the shop next to my house. The owner is shaken but not hurt.
-
-evaluation/test_clips/clip9.m4a: WER = 0.0
-  reference : Part of the ceiling in the old building near Law Garden has collapsed, a few people are trapped inside.
-  hypothesis: Part of the ceiling in the old building near law garden has collapsed. A few people are trapped inside.
-
-evaluation/test_clips/clip10.m4a: WER = 0.133
-  reference : My friend is having chest pain and difficulty breathing, we are at home in Bopal.
-  hypothesis: My friend is having chest pain and difficulty in breathing. We are at home in Bhopal.
-
-Overall WER across 10 clips: 0.062
-```
-
-Most of the non-zero clips trace back to phrasing, not mishearing —
-Whisper writing "there has been" instead of "there's", or "3rd" instead
-of "third." The two errors that are genuine mishearings — clip 7
-("Navrangpura" → "Novrankura") and clip 10 ("Bopal" → "Bhopal") — both
-land on the `location` field specifically, which is the more relevant
-finding than the pooled 0.062 number on its own: local place names are
-a real weak point for Whisper here, independent of how well the
-downstream extraction prompt is written.
+The complete evaluation output and reference test cases are available in the
+`evaluation/` directory.
 
 ## 💰 Cost notes
 
-Both API calls in this project are paid OpenAI endpoints — `whisper-1`
-for transcription and `gpt-4.1-mini` for extraction, report generation,
-and recommendations.
+This project uses paid OpenAI endpoints:
+
+* `whisper-1` for speech-to-text transcription
+* `gpt-4.1-mini` for structured extraction, incident report generation,
+  and pre-arrival recommendations
