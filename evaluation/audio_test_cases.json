@@ -1,0 +1,42 @@
+[
+  {
+    "file": "evaluation/test_clips/clip1.m4a",
+    "reference": "There's been a car accident on SG Highway near the Iskcon crossroads, two cars collided and one person is bleeding from the head."
+  },
+  {
+    "file": "evaluation/test_clips/clip2.m4a",
+    "reference": "There's a fire in the kitchen of my apartment on the third floor, the smoke is spreading fast and I need help right now."
+  },
+  {
+    "file": "evaluation/test_clips/clip3.m4a",
+    "reference": "My neighbor just collapsed on the stairs and he's not responding, I think he's unconscious."
+  },
+  {
+    "file": "evaluation/test_clips/clip4.m4a",
+    "reference": "There's a gas leak in our building, I can smell it strongly near the parking area, please send someone immediately."
+  },
+  {
+    "file": "evaluation/test_clips/clip5.m4a",
+    "reference": "A motorcycle skidded and fell near Vastrapur lake, the rider seems conscious but his leg looks injured."
+  },
+  {
+    "file": "evaluation/test_clips/clip6.m4a",
+    "reference": "There's a small crowd gathered after a fight broke out near the market, no one seems seriously hurt but it's getting loud."
+  },
+  {
+    "file": "evaluation/test_clips/clip7.m4a",
+    "reference": "A power line fell down after the storm near my house on Navrangpura main road, nobody has touched it yet."
+  },
+  {
+    "file": "evaluation/test_clips/clip8.m4a",
+    "reference": "There's been a robbery at the shop next to my house, the owner is shaken but not hurt."
+  },
+    {
+    "file": "evaluation/test_clips/clip9.m4a",
+    "reference": "Part of the ceiling in the old building near Law Garden has collapsed, a few people are trapped inside."
+  },
+  {
+    "file": "evaluation/test_clips/clip10.m4a",
+    "reference": "My friend is having chest pain and difficulty breathing, we are at home in Bopal."
+  }
+]

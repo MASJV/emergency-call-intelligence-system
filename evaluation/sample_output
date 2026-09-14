@@ -1,0 +1,41 @@
+evaluation/test_clips/clip1.m4a: WER = 0.087
+  reference : There's been a car accident on SG Highway near the Iskcon crossroads, two cars collided and one person is bleeding from the head.
+  hypothesis: There has been a car accident on SG highway near the ISKCON crossroads, two cars collided and one person is bleeding from the head.
+
+evaluation/test_clips/clip2.m4a: WER = 0.125
+  reference : There's a fire in the kitchen of my apartment on the third floor, the smoke is spreading fast and I need help right now.
+  hypothesis: There is a fire in the kitchen of my apartment on the 3rd floor. The smoke is spreading fast and I need help right now.
+
+evaluation/test_clips/clip3.m4a: WER = 0.267
+  reference : My neighbor just collapsed on the stairs and he's not responding, I think he's unconscious.
+  hypothesis: My neighbor just collapsed on the stairs and he is not responding. I think he is unconscious.
+
+evaluation/test_clips/clip4.m4a: WER = 0.0
+  reference : There's a gas leak in our building, I can smell it strongly near the parking area, please send someone immediately.
+  hypothesis: There's a gas leak in our building. I can smell it strongly near the parking area. Please send someone immediately.
+
+evaluation/test_clips/clip5.m4a: WER = 0.0
+  reference : A motorcycle skidded and fell near Vastrapur lake, the rider seems conscious but his leg looks injured.
+  hypothesis: A motorcycle skidded and fell near Vastrapur lake. The rider seems conscious but his leg looks injured.
+
+evaluation/test_clips/clip6.m4a: WER = 0.0
+  reference : There's a small crowd gathered after a fight broke out near the market, no one seems seriously hurt but it's getting loud.
+  hypothesis: There's a small crowd gathered after a fight broke out near the market. No one seems seriously hurt, but it's getting loud.
+
+evaluation/test_clips/clip7.m4a: WER = 0.05
+  reference : A power line fell down after the storm near my house on Navrangpura main road, nobody has touched it yet.
+  hypothesis: A power line fell down after the storm near my house on Novrankura Main Road, nobody has touched it yet.
+
+evaluation/test_clips/clip8.m4a: WER = 0.0
+  reference : There's been a robbery at the shop next to my house, the owner is shaken but not hurt.
+  hypothesis: There's been a robbery at the shop next to my house. The owner is shaken but not hurt.
+
+evaluation/test_clips/clip9.m4a: WER = 0.0
+  reference : Part of the ceiling in the old building near Law Garden has collapsed, a few people are trapped inside.
+  hypothesis: Part of the ceiling in the old building near law garden has collapsed. A few people are trapped inside.
+
+evaluation/test_clips/clip10.m4a: WER = 0.133
+  reference : My friend is having chest pain and difficulty breathing, we are at home in Bopal.
+  hypothesis: My friend is having chest pain and difficulty in breathing. We are at home in Bhopal.
+
+Overall WER across 10 clips: 0.062

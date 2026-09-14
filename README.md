@@ -1,4 +1,4 @@
-# AI Emergency Call Intelligence System
+# 🚨 AI Emergency Call Intelligence System
 
 A voice-in, text-out emergency call assistant. A caller speaks, the system
 transcribes and extracts structured incident data one field at a time,
@@ -6,7 +6,7 @@ asks follow-up questions for whatever is still missing, and — once every
 field is known — produces a formal incident report and a short set of
 pre-arrival safety steps for the caller.
 
-## Architecture
+## 🏗️ Architecture
 
 ```
 Streamlit UI (st.audio_input, mic recording)
@@ -34,7 +34,7 @@ Streamlit display (sidebar transcript, JSON state, report, recommendations)
 
 All stages are wrapped in `@traceable` (LangSmith) for tracing.
 
-## Files and which stage they handle
+## 📁 Files and which stage they handle
 
 | File | Stage |
 |---|---|
@@ -44,7 +44,7 @@ All stages are wrapped in `@traceable` (LangSmith) for tracing.
 | `generate_report_recommendation.py` | Incident report generation + pre-arrival safety recommendations |
 | `app.py` | Streamlit app — session state, UI, wires every stage together |
 
-## Fields extracted
+## 📋 Fields extracted
 
 `emergency_type`, `location`, `people_involved`, `injuries`, `hazards`, `severity`
 
@@ -56,7 +56,7 @@ from "not mentioned yet" (`"Unknown"`), so the follow-up loop keeps asking
 until the caller actually answers the hazard question rather than treating
 silence as "safe."
 
-## Setup
+## ⚙️ Setup
 
 1. Create a virtual environment (recommended):
    ```
@@ -89,7 +89,7 @@ silence as "safe."
    streamlit run app.py
    ```
 
-## How it works, in plain words
+## 🗣️ How it works, in plain words
 
 1. **Speak** — the caller records a message through the browser mic button.
 2. **Transcribe** — Whisper turns that recording into text. This is
@@ -112,26 +112,87 @@ silence as "safe."
    power line, unstable structure), then "follow the dispatcher's
    instructions."
 
-## Design notes and known limitations
+## ✨ Enhancements
 
-- **"Near-real-time," not real-time.** The Whisper API is batch, not
-  streaming, so this is push-to-talk turn-taking rather than live
-  transcription.
-- **The recommendation step is a tightly-constrained LLM prompt, not a
-  deterministic lookup table.** GPT-4.1 mini generates the pre-arrival
-  steps directly, under a prompt that fixes the format, ordering, and which
-  hazard-specific actions are allowed — rather than a rule table that
-  looks up actions by emergency type outside the model entirely.
-- **No inference, ever.** Every field — hazards included — is left
-  `"Unknown"` unless the caller explicitly states it. This trades a few
-  extra follow-up questions for not sending responders on a guess.
-- **Live-mic capture is unreliable on Streamlit Community Cloud.** This is
-  best run locally; a recorded demo video stands in for a live deployment
-  demo.
+Beyond the base capstone requirements:
 
-## Cost notes
+- [x] Tracing and observability — every stage wrapped in LangSmith `@traceable`
+- [x] Audio (speech-to-text) evaluation — Word Error Rate scoring via jiwer
+
+## 📊 Evaluation
+
+### 🎙️ Audio / speech-to-text (jiwer, WER)
+
+`evaluation/evaluate_audio.py` runs a fixed set of 10 recorded test clips
+against the same `speech_to_text()` function the app uses in production —
+not a copy or reimplementation, the actual function. Each clip's Whisper
+output is scored against a hand-typed reference transcript using Word
+Error Rate, with a normalization pass (lowercase, punctuation stripped)
+so formatting differences don't count as errors.
+
+`evaluation/audio_test_cases.json` holds the clip-to-reference mapping.
+The clips themselves aren't committed (`evaluation/test_clips/` is
+gitignored, since they're personal voice recordings) — the reference
+JSON and the sample output below are kept as the record of what was
+said and how the run went.
+
+Sample output from a run:
+
+```
+evaluation/test_clips/clip1.m4a: WER = 0.087
+  reference : There's been a car accident on SG Highway near the Iskcon crossroads, two cars collided and one person is bleeding from the head.
+  hypothesis: There has been a car accident on SG highway near the ISKCON crossroads, two cars collided and one person is bleeding from the head.
+
+evaluation/test_clips/clip2.m4a: WER = 0.125
+  reference : There's a fire in the kitchen of my apartment on the third floor, the smoke is spreading fast and I need help right now.
+  hypothesis: There is a fire in the kitchen of my apartment on the 3rd floor. The smoke is spreading fast and I need help right now.
+
+evaluation/test_clips/clip3.m4a: WER = 0.267
+  reference : My neighbor just collapsed on the stairs and he's not responding, I think he's unconscious.
+  hypothesis: My neighbor just collapsed on the stairs and he is not responding. I think he is unconscious.
+
+evaluation/test_clips/clip4.m4a: WER = 0.0
+  reference : There's a gas leak in our building, I can smell it strongly near the parking area, please send someone immediately.
+  hypothesis: There's a gas leak in our building. I can smell it strongly near the parking area. Please send someone immediately.
+
+evaluation/test_clips/clip5.m4a: WER = 0.0
+  reference : A motorcycle skidded and fell near Vastrapur lake, the rider seems conscious but his leg looks injured.
+  hypothesis: A motorcycle skidded and fell near Vastrapur lake. The rider seems conscious but his leg looks injured.
+
+evaluation/test_clips/clip6.m4a: WER = 0.0
+  reference : There's a small crowd gathered after a fight broke out near the market, no one seems seriously hurt but it's getting loud.
+  hypothesis: There's a small crowd gathered after a fight broke out near the market. No one seems seriously hurt, but it's getting loud.
+
+evaluation/test_clips/clip7.m4a: WER = 0.05
+  reference : A power line fell down after the storm near my house on Navrangpura main road, nobody has touched it yet.
+  hypothesis: A power line fell down after the storm near my house on Novrankura Main Road, nobody has touched it yet.
+
+evaluation/test_clips/clip8.m4a: WER = 0.0
+  reference : There's been a robbery at the shop next to my house, the owner is shaken but not hurt.
+  hypothesis: There's been a robbery at the shop next to my house. The owner is shaken but not hurt.
+
+evaluation/test_clips/clip9.m4a: WER = 0.0
+  reference : Part of the ceiling in the old building near Law Garden has collapsed, a few people are trapped inside.
+  hypothesis: Part of the ceiling in the old building near law garden has collapsed. A few people are trapped inside.
+
+evaluation/test_clips/clip10.m4a: WER = 0.133
+  reference : My friend is having chest pain and difficulty breathing, we are at home in Bopal.
+  hypothesis: My friend is having chest pain and difficulty in breathing. We are at home in Bhopal.
+
+Overall WER across 10 clips: 0.062
+```
+
+Most of the non-zero clips trace back to phrasing, not mishearing —
+Whisper writing "there has been" instead of "there's", or "3rd" instead
+of "third." The two errors that are genuine mishearings — clip 7
+("Navrangpura" → "Novrankura") and clip 10 ("Bopal" → "Bhopal") — both
+land on the `location` field specifically, which is the more relevant
+finding than the pooled 0.062 number on its own: local place names are
+a real weak point for Whisper here, independent of how well the
+downstream extraction prompt is written.
+
+## 💰 Cost notes
 
 Both API calls in this project are paid OpenAI endpoints — `whisper-1`
 for transcription and `gpt-4.1-mini` for extraction, report generation,
-and recommendations. There's no free local component here (no local
-embeddings or reranker), so cost scales with call volume and length.
+and recommendations.
