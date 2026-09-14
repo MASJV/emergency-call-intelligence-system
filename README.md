@@ -116,8 +116,8 @@ silence as "safe."
 
 Beyond the base capstone requirements:
 
-- [x] Tracing and observability — every stage wrapped in LangSmith `@traceable`
-- [x] Audio (speech-to-text) evaluation — Word Error Rate scoring via jiwer
+- ✅ Tracing and observability — every stage wrapped in LangSmith `@traceable`
+- ✅ Audio (speech-to-text) evaluation — Word Error Rate scoring via jiwer
 
 ## 📊 Evaluation
 
